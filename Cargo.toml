@@ -13,7 +13,8 @@ edition = "2021"
 clap = { version = "3", features = ["derive", "suggestions", "color", "cargo"] }
 anyhow = { version = "1" }
 props-rs = { version = "0" }
-shell-words = { version = "1" }
+regex = { version = "1" }
+lazy_static = { version = "1" }
 
 [[bin]]
 name = "ffmpeg-audio-normalizer"

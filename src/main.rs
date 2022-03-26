@@ -3,14 +3,15 @@ mod cli;
 use anyhow::{bail, Context, Result};
 use clap::Parser;
 use cli::{Cli, Command};
+use lazy_static::lazy_static;
 use props_rs::{parse, Property};
-use shell_words::split;
+use regex::Regex;
 use std::fs::OpenOptions;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
 use std::process::{Command as osCommand, Stdio};
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 struct EbuLoudnessValues {
     input_i: f64,
     input_tp: f64,
@@ -106,7 +107,7 @@ fn normalize_ebu(
         loudness_range_target,
         true_peak,
         offset,
-        &ffmpeg_args,
+        ffmpeg_args,
     )
     .with_context(|| "Failed to run pass 1 to measure loudness values")?;
 
@@ -170,49 +171,101 @@ fn normalize_ebu_pass1(
         });
 
     let mut is_json = false;
-    let mut output_json = String::new();
     let mut err_log = String::new();
+    let mut err_parse = String::new();
+    let mut values = EbuLoudnessValues {
+        ..Default::default()
+    };
+    let mut values_count = 0;
+
+    lazy_static! {
+        static ref RE_VALUES: Regex = Regex::new(r#"^\s*"(\S+)"\s*:\s*"(\S+)",?\s*$"#).unwrap();
+    }
 
     let stderr_reader = BufReader::new(stderr);
     stderr_reader
         .lines()
         .filter_map(|line| line.ok())
-        .filter(|line| {
-            if is_json {
-                is_json = !line.eq("}");
-                return true;
-            }
-            if line.eq("{") {
+        .filter(|line| match line.as_str() {
+            "{" => {
                 is_json = true;
-                return true;
+                false
             }
+            "}" => {
+                is_json = false;
+                false
+            }
+            _ => {
+                if is_json {
+                    true
+                } else {
+                    // log error in case of problems
+                    err_log += line;
+                    err_log += "\n";
 
-            // log error in case of problems
-            err_log += line;
-            err_log += "\n";
-
-            false
+                    false
+                }
+            }
         })
         .for_each(|line| {
-            output_json += &line;
-            output_json += "\n";
+            let caps = RE_VALUES.captures(&line);
+
+            if caps.is_none() {
+                err_parse += &format!("Failed to parse loudness value: {}\n", line);
+                return;
+            }
+
+            let m = caps.unwrap();
+            let field = m.get(1).map_or("", |m| m.as_str());
+            let value_str = String::from(m.get(2).map_or("", |m| m.as_str()));
+
+            match field {
+                "normalization_type" => {
+                    values.normalization_type = value_str;
+                    values_count += 1;
+                }
+                _ => {
+                    match value_str.parse::<f64>() {
+                        Ok(value) => {
+                            match field {
+                                "input_i" => values.input_i = value,
+                                "input_tp" => values.input_tp = value,
+                                "input_lra" => values.input_lra = value,
+                                "input_thresh" => values.input_thresh = value,
+                                "output_i" => values.output_i = value,
+                                "output_tp" => values.output_tp = value,
+                                "output_lra" => values.output_lra = value,
+                                "output_thresh" => values.output_thresh = value,
+                                "target_offset" => values.target_offset = value,
+                                _ => {
+                                    err_parse += &format!("Unknown loudness value: {}\n", line);
+                                    return;
+                                }
+                            }
+                            values_count += 1;
+                        }
+                        Err(_) => {
+                            err_parse += &format!("Invalid loudness value: {}\n", line);
+                        }
+                    };
+                }
+            }
         });
 
-    if output_json.is_empty() {
+    if values_count == 0 {
         bail!("Failed run to ffmpeg to measure loudness values: \n{err_log}");
     }
 
-    // TODO: parse JSON output
-    Ok(EbuLoudnessValues {
-        input_i: -31.48,
-        input_tp: -18.58,
-        input_lra: 7.10,
-        input_thresh: -41.60,
-        output_i: -21.99,
-        output_tp: -9.24,
-        output_lra: 3.70,
-        output_thresh: -32.84,
-        normalization_type: String::from("dynamic"),
-        target_offset: -1.01,
-    })
+    if values_count != 10 {
+        bail!(
+            "ffmpeg returns {values_count} loudness value(s) instead of 10: \n{:#?}",
+            values
+        );
+    }
+
+    if !err_parse.is_empty() {
+        bail!("ffmpeg returns strange loudness values: {err_parse}");
+    }
+
+    Ok(values)
 }
