@@ -1,0 +1,61 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=ffmpeg-audio-normalizer",
+                    "--package=ffmpeg-audio-normalizer"
+                ],
+                "filter": {
+                    "name": "ffmpeg-audio-normalizer",
+                    "kind": "bin"
+                }
+            },
+            "args": [
+                "-i",
+                "./test/10_seconds.ac3",
+                "-o",
+                "./test/10_seconds.ebur128.ac3",
+                "ebu",
+                "--",
+                "-c:a",
+                "ac3",
+                "-b:a",
+                "384k",
+                "-ar",
+                "48000",
+                "-dialnorm",
+                "-31"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=ffmpeg-audio-normalizer",
+                    "--package=ffmpeg-audio-normalizer"
+                ],
+                "filter": {
+                    "name": "ffmpeg-audio-normalizer",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

@@ -1,0 +1,20 @@
+[package]
+name = "ffmpeg-audio-normalizer"
+authors = ["Aleksandr Sokolovskii <amsokol+github@gmail.com>"]
+version = "0.1.0"
+repository = "https://github.com/amsokol/ffmpeg-audio-normalizer.rs"
+description = "Command line tool for normalizing audio files.\nRust language port of ffmpeg-normalize Python tool (https://github.com/slhck/ffmpeg-normalize)"
+license = "MIT"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+clap = { version = "3", features = ["derive", "suggestions", "color", "cargo"] }
+anyhow = { version = "1" }
+props-rs = { version = "0" }
+shell-words = { version = "1" }
+
+[[bin]]
+name = "ffmpeg-audio-normalizer"
+path = "src/main.rs"
