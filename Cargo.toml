@@ -15,6 +15,9 @@ anyhow = { version = "1" }
 props-rs = { version = "0" }
 regex = { version = "1" }
 lazy_static = { version = "1" }
+rayon = { version = "1" }
+indicatif = { version = "0", features = ["rayon"] }
+hhmmss = { version = "0" }
 
 [[bin]]
 name = "ffmpeg-audio-normalizer"

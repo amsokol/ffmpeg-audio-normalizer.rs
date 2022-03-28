@@ -1,4 +1,3 @@
-use anyhow::{bail, Context, Result};
 use clap::{crate_authors, crate_description, crate_name, crate_version, AppSettings, Parser};
 use std::path::PathBuf;
 
