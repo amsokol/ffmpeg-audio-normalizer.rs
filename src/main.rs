@@ -1,12 +1,13 @@
 mod cli;
 mod ebu;
-mod file;
+mod ffmpeg;
+mod ffprobe;
 
 use anyhow::{bail, Context, Result};
 use clap::Parser;
 use cli::{Cli, Command};
 use ebu::normalize_ebu;
-use file::file_info;
+use ffprobe::file_info;
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
