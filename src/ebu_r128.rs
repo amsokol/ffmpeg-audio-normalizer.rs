@@ -1,12 +1,8 @@
 use crate::ffmpeg::{ffmpeg_file_path, get_progress, get_result, EbuLoudnessValues};
-use crate::ffprobe::{
-    file_bit_rate, file_bit_rate_txt, file_channel_layout, file_channels, file_codec_name,
-    file_duration, file_info, file_sample_rate_txt,
-};
+use crate::ffprobe::{FFprobe, FileInfo};
 use anyhow::{anyhow, Context, Ok, Result};
 use hhmmss::Hhmmss;
 use indicatif::{ProgressBar, ProgressStyle};
-use props_rs::Property;
 use std::io::BufReader;
 use std::path::Path;
 use std::process::{Command, Stdio};
@@ -29,7 +25,7 @@ pub struct EbuR128NormalizationPass1Args<'a> {
     pub input_file_duration: Option<Duration>,
     pub input_file_bit_rate: Option<i64>,
     pub input_file_codec_name: Option<String>,
-    pub input_file_info: &'a [Property],
+    pub input_file_info: FileInfo,
     pub target_level: f64,
     pub loudness_range_target: f64,
     pub true_peak: f64,
@@ -58,10 +54,10 @@ pub struct EbuR128NormalizationPass2Args<'a> {
 pub fn normalize_ebu_r128(args: EbuR128NormalizationArgs) -> Result<()> {
     // get input file information
     let input_file_info =
-        file_info(args.input_file).with_context(|| "Failed to get input file information")?;
-    let duration = file_duration(&input_file_info);
-    let input_file_bit_rate = file_bit_rate(&input_file_info);
-    let input_file_codec_name = file_codec_name(&input_file_info);
+        FFprobe::info(args.input_file).with_context(|| "Failed to get input file information")?;
+    let duration = input_file_info.duration();
+    let input_file_bit_rate = input_file_info.bit_rate();
+    let input_file_codec_name = input_file_info.codec_name();
 
     let values = pass1(EbuR128NormalizationPass1Args {
         verbose: args.verbose,
@@ -69,7 +65,7 @@ pub fn normalize_ebu_r128(args: EbuR128NormalizationArgs) -> Result<()> {
         input_file_duration: duration,
         input_file_bit_rate,
         input_file_codec_name: input_file_codec_name.clone(),
-        input_file_info: &input_file_info,
+        input_file_info,
         target_level: args.target_level,
         loudness_range_target: args.loudness_range_target,
         true_peak: args.true_peak,
@@ -115,15 +111,21 @@ fn pass1(args: EbuR128NormalizationPass1Args) -> Result<EbuLoudnessValues> {
     println!("Input audio file: \n {}", args.input_file.display());
     println!(
         " Codec: {}, Channels: {}, Channel-layout: {}, Duration: {}, Bit-rate: {}, Sample-rate: {}",
-        file_codec_name(args.input_file_info).unwrap_or_else(|| "N/A".to_string()),
-        file_channels(args.input_file_info).unwrap_or_else(|| "N/A".to_string()),
-        file_channel_layout(args.input_file_info).unwrap_or_else(|| "N/A".to_string()),
+        args.input_file_info
+            .codec_name()
+            .unwrap_or_else(|| "N/A".to_string()),
+        args.input_file_info
+            .channels()
+            .unwrap_or_else(|| "N/A".to_string()),
+        args.input_file_info
+            .channel_layout()
+            .unwrap_or_else(|| "N/A".to_string()),
         match args.input_file_duration {
             None => "unknown".to_string(),
             Some(duration) => duration.hhmmss(),
         },
-        file_bit_rate_txt(args.input_file_info),
-        file_sample_rate_txt(args.input_file_info),
+        args.input_file_info.bit_rate_as_txt(),
+        args.input_file_info.sample_rate(),
     );
 
     let mut cmd = Command::new(ffmpeg_file_path());
@@ -301,20 +303,26 @@ fn pass2(args: EbuR128NormalizationPass2Args) -> Result<EbuLoudnessValues> {
     .with_context(|| "Failed to get results of pass 2 normalization")?;
 
     let output_file_info =
-        file_info(args.output_file).with_context(|| "Failed to get output file information")?;
+        FFprobe::info(args.output_file).with_context(|| "Failed to get output file information")?;
 
     println!("Output audio file: \n {}", args.output_file.display());
     println!(
         " Codec: {}, Channels: {}, Channel-layout: {}, Duration: {}, Bit-rate: {}, Sample-rate: {}",
-        file_codec_name(&output_file_info).unwrap_or_else(|| "N/A".to_string()),
-        file_channels(&output_file_info).unwrap_or_else(|| "N/A".to_string()),
-        file_channel_layout(&output_file_info).unwrap_or_else(|| "N/A".to_string()),
-        match file_duration(&output_file_info) {
+        output_file_info
+            .codec_name()
+            .unwrap_or_else(|| "N/A".to_string()),
+        output_file_info
+            .channels()
+            .unwrap_or_else(|| "N/A".to_string()),
+        output_file_info
+            .channel_layout()
+            .unwrap_or_else(|| "N/A".to_string()),
+        match output_file_info.duration() {
             None => "unknown".to_string(),
             Some(duration) => duration.hhmmss(),
         },
-        file_bit_rate_txt(&output_file_info),
-        file_sample_rate_txt(&output_file_info),
+        output_file_info.bit_rate_as_txt(),
+        output_file_info.sample_rate(),
     );
 
     Ok(values)
