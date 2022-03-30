@@ -1,16 +1,6 @@
 use clap::{crate_authors, crate_description, crate_name, crate_version, AppSettings, Parser};
 use std::path::PathBuf;
 
-/*
-    /// Normalization type (default: `ebu`).
-    /// Valid values include 'ebu', 'rms', 'peak'.
-    /// EBU normalization performs two passes and normalizes according to EBU R128.
-    /// RMS-based normalization brings the input file to the specified RMS level.
-    /// Peak normalization brings the signal to the specified peak level.
-    #[clap(long, ignore_case = true, possible_values = ["ebu"], default_value = "ebu")]
-    normalization_type: String,
-*/
-
 #[derive(Parser, Debug)]
 #[clap(name = crate_name!())]
 #[clap(author = crate_authors!("\n"))]
@@ -19,6 +9,10 @@ use std::path::PathBuf;
 #[clap(allow_negative_numbers = true)]
 #[clap(global_setting(AppSettings::DeriveDisplayOrder))]
 pub struct Cli {
+    /// Verbose output
+    #[clap(long)]
+    pub verbose: bool,
+
     /// Input audio file
     #[clap(long, short, value_name = "INPUT_FILE", parse(from_os_str))]
     pub input_file: PathBuf,
@@ -59,7 +53,7 @@ pub enum Command {
         #[clap(long, default_value = "0.0")]
         offset: f64,
 
-        /// Custom arguments for ffmpeg, e.g. "-c:a ac3 -b:a 640k -ar 48000 -dialnorm -31"
+        /// Custom arguments for ffmpeg to override default values, e.g. "-c:a ac3 -b:a 640k -ar 48000 -dialnorm -31"
         #[clap(
             last = true,
             value_name = "ffmpeg_arguments",

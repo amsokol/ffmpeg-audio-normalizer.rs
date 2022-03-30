@@ -41,7 +41,7 @@ pub fn file_info(file: &Path) -> Result<Vec<Property>> {
     };
 }
 
-pub fn file_property(info: &[Property], name: &str) -> Option<String> {
+fn file_property(info: &[Property], name: &str) -> Option<String> {
     for prop in info.iter() {
         if name.eq(&prop.key) {
             return Some(prop.value.clone());
@@ -51,16 +51,16 @@ pub fn file_property(info: &[Property], name: &str) -> Option<String> {
     None
 }
 
-pub fn file_codec_name(info: &[Property]) -> String {
-    file_property(info, "codec_name").unwrap_or_else(|| "N/A".to_string())
+pub fn file_codec_name(info: &[Property]) -> Option<String> {
+    file_property(info, "codec_name")
 }
 
-pub fn file_channels(info: &[Property]) -> String {
-    file_property(info, "channels").unwrap_or_else(|| "N/A".to_string())
+pub fn file_channels(info: &[Property]) -> Option<String> {
+    file_property(info, "channels")
 }
 
-pub fn file_channel_layout(info: &[Property]) -> String {
-    file_property(info, "channel_layout").unwrap_or_else(|| "N/A".to_string())
+pub fn file_channel_layout(info: &[Property]) -> Option<String> {
+    file_property(info, "channel_layout")
 }
 
 pub fn parse_duration(val: &str) -> Option<Duration> {
@@ -77,17 +77,24 @@ pub fn file_duration(info: &[Property]) -> Option<Duration> {
     }
 }
 
-pub fn file_bit_rate(info: &[Property]) -> String {
-    match file_property(info, "bit_rate") {
-        Some(val) => match val.parse::<i64>() {
-            Ok(bit_rate) => format!("{} kb/s", bit_rate / 1000),
-            Err(_) => "N/A".to_string(),
-        },
+pub fn file_bit_rate(info: &[Property]) -> Option<i64> {
+    if let Some(val) = file_property(info, "bit_rate") {
+        if let Ok(bit_rate) = val.parse::<i64>() {
+            return Some(bit_rate);
+        };
+    }
+
+    None
+}
+
+pub fn file_bit_rate_txt(info: &[Property]) -> String {
+    match file_bit_rate(info) {
+        Some(bit_rate) => format!("{} kb/s", bit_rate / 1000),
         None => "N/A".to_string(),
     }
 }
 
-pub fn file_sample_rate(info: &[Property]) -> String {
+pub fn file_sample_rate_txt(info: &[Property]) -> String {
     match file_property(info, "sample_rate") {
         Some(val) => match val.parse::<f64>() {
             Ok(sample_rate) => format!("{:.1} kHz", sample_rate / 1000.0),
