@@ -1,9 +1,9 @@
-use crate::ffmpeg::{get_progress, get_result, EbuLoudnessValues};
+use crate::ffmpeg::{ffmpeg_file_path, get_progress, get_result, EbuLoudnessValues};
 use crate::ffprobe::{
     file_bit_rate, file_bit_rate_txt, file_channel_layout, file_channels, file_codec_name,
     file_duration, file_info, file_sample_rate_txt,
 };
-use anyhow::{anyhow, bail, Context, Ok, Result};
+use anyhow::{anyhow, Context, Ok, Result};
 use hhmmss::Hhmmss;
 use indicatif::{ProgressBar, ProgressStyle};
 use props_rs::Property;
@@ -88,7 +88,9 @@ pub fn normalize_ebu_r128(args: EbuR128NormalizationArgs) -> Result<()> {
         target_level: args.target_level,
         loudness_range_target: args.loudness_range_target,
         true_peak: args.true_peak,
-        offset: args.offset,
+        offset: values
+            .target_offset
+            .ok_or_else(|| anyhow!("EBU normalization pass 1 does not return \"target_offset\""))?,
         measured_i: values
             .input_i
             .ok_or_else(|| anyhow!("EBU normalization pass 1 does not return \"input_i\""))?,
@@ -124,14 +126,14 @@ fn pass1(args: EbuR128NormalizationPass1Args) -> Result<EbuLoudnessValues> {
         file_sample_rate_txt(args.input_file_info),
     );
 
-    let mut cmd = Command::new("ffmpeg");
+    let mut cmd = Command::new(ffmpeg_file_path());
 
     cmd.arg("-progress")
         .arg("-")
         .arg("-nostats")
         .arg("-nostdin")
-        .arg("-hide_banner")
         .arg("-y")
+        .arg("-hide_banner")
         .arg("-i")
         .arg(args.input_file)
         .arg("-filter_complex")
@@ -221,9 +223,9 @@ fn pass2(args: EbuR128NormalizationPass2Args) -> Result<EbuLoudnessValues> {
         .arg("-nostats")
         .arg("-y")
         .arg("-nostdin")
+        .arg("-hide_banner")
         .arg("-i")
         .arg(args.input_file)
-        .arg("-hide_banner")
         .arg("-filter_complex")
         .arg(filter + ":linear=true:print_format=json[norm0]")
         .arg("-map_metadata")

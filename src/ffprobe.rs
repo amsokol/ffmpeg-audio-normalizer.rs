@@ -1,9 +1,27 @@
 use anyhow::{bail, Context, Result};
 use props_rs::{parse, Property};
+use std::env::consts::OS;
+use std::env::current_dir;
 use std::fs::OpenOptions;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::Duration;
+
+fn ffprobe_file_path() -> PathBuf {
+    let mut path = current_dir().unwrap_or_default();
+
+    path.push("ffprobe2");
+    if OS == "windows" {
+        path.push(".exe");
+    }
+
+    if !Path::new(&path).exists() {
+        path.clear();
+        path.push("ffprobe");
+    }
+
+    path
+}
 
 pub fn file_info(file: &Path) -> Result<Vec<Property>> {
     /* Check input file exist or not */
@@ -14,7 +32,7 @@ pub fn file_info(file: &Path) -> Result<Vec<Property>> {
             .with_context(|| format!("Can't open input file: {}", file.display()))?;
     }
 
-    let output = Command::new("ffprobe")
+    let output = Command::new(ffprobe_file_path())
         .arg("-i")
         .arg(file)
         .arg("-v")

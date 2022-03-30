@@ -1,7 +1,10 @@
 use anyhow::{bail, Result};
 use lazy_static::lazy_static;
 use regex::Regex;
+use std::env::consts::OS;
+use std::env::current_dir;
 use std::io::{BufRead, BufReader, Read};
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 #[derive(Debug, Default)]
@@ -22,6 +25,22 @@ lazy_static! {
     static ref RE_DURATION: Regex =
         Regex::new(r#"^\s*out_time\s*=\s*(\d\d):(\d\d):(\d\d).*$"#).unwrap();
     static ref RE_VALUES: Regex = Regex::new(r#"^\s*"(\S+)"\s*:\s*"(\S+)",?\s*$"#).unwrap();
+}
+
+pub fn ffmpeg_file_path() -> PathBuf {
+    let mut path = current_dir().unwrap_or_default();
+
+    path.push("ffmpeg");
+    if OS == "windows" {
+        path.push(".exe");
+    }
+
+    if !Path::new(&path).exists() {
+        path.clear();
+        path.push("ffmpeg");
+    }
+
+    path
 }
 
 fn parse_progress(val: &str) -> Option<Duration> {
