@@ -9,15 +9,16 @@ use std::time::Duration;
 
 fn ffprobe_file_path() -> PathBuf {
     let mut path = current_dir().unwrap_or_default();
+    let ffprobe = match OS {
+        "windows" => "ffprobe.exe",
+        _ => "ffprobe",
+    };
 
-    path.push("ffprobe2");
-    if OS == "windows" {
-        path.push(".exe");
-    }
+    path.push(ffprobe);
 
     if !Path::new(&path).exists() {
         path.clear();
-        path.push("ffprobe");
+        path.push(ffprobe);
     }
 
     path

@@ -29,15 +29,16 @@ lazy_static! {
 
 pub fn ffmpeg_file_path() -> PathBuf {
     let mut path = current_dir().unwrap_or_default();
+    let ffmpeg = match OS {
+        "windows" => "ffmpeg.exe",
+        _ => "ffmpeg",
+    };
 
-    path.push("ffmpeg");
-    if OS == "windows" {
-        path.push(".exe");
-    }
+    path.push(ffmpeg);
 
     if !Path::new(&path).exists() {
         path.clear();
-        path.push("ffmpeg");
+        path.push(ffmpeg);
     }
 
     path
