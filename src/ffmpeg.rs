@@ -10,12 +10,12 @@ use std::time::Duration;
 #[derive(Debug, Default)]
 pub struct EbuLoudnessValues {
     pub input_i: Option<f64>,
-    pub input_tp: Option<f64>,
     pub input_lra: Option<f64>,
+    pub input_tp: Option<f64>,
     pub input_thresh: Option<f64>,
     pub output_i: Option<f64>,
-    pub output_tp: Option<f64>,
     pub output_lra: Option<f64>,
+    pub output_tp: Option<f64>,
     pub output_thresh: Option<f64>,
     pub normalization_type: Option<String>,
     pub target_offset: Option<f64>,

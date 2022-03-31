@@ -106,6 +106,14 @@ pub fn normalize_ebu_r128(args: EbuR128NormalizationArgs) -> Result<()> {
     Ok(())
 }
 
+fn dump_command_args(cmd: &Command) {
+    println!("Running ffmpeg with the following arguments:");
+    print!("[ ");
+    cmd.get_args()
+        .for_each(|arg| print!("{} ", arg.to_str().unwrap_or_default()));
+    println!("]");
+}
+
 fn pass1(args: EbuR128NormalizationPass1Args) -> Result<EbuLoudnessValues> {
     // show input file information
     println!("Input audio file: \n {}", args.input_file.display());
@@ -120,10 +128,8 @@ fn pass1(args: EbuR128NormalizationPass1Args) -> Result<EbuLoudnessValues> {
         args.input_file_info
             .channel_layout()
             .unwrap_or_else(|| "N/A".to_string()),
-        match args.input_file_duration {
-            None => "unknown".to_string(),
-            Some(duration) => duration.hhmmss(),
-        },
+        args.input_file_duration
+            .map_or("N/A".to_string(), |v| v.hhmmss()),
         args.input_file_info.bit_rate_as_txt(),
         args.input_file_info.sample_rate(),
     );
@@ -161,25 +167,21 @@ fn pass1(args: EbuR128NormalizationPass1Args) -> Result<EbuLoudnessValues> {
 
     cmd.arg("-vn").arg("-sn").arg("-f").arg("null").arg("-");
 
-    if args.verbose {
-        println!("Running ffmpeg with the following arguments for pass 1:");
-        print!("[ ");
-        cmd.get_args()
-            .for_each(|arg| print!("{} ", arg.to_str().unwrap_or_default()));
-        println!("]");
-    }
-
     cmd.stdout(Stdio::piped()).stderr(Stdio::piped());
 
     let mut child = cmd.spawn().with_context(|| "Failed to run ffmpeg tool")?;
 
     if let Some(long) = args.input_file_duration {
-        println!("Processing audio file to measure loudness values:");
+        println!("[1/2] Processing audio file to measure loudness values:");
 
-        let bar = ProgressBar::new(long.as_secs());
+        if args.verbose {
+            dump_command_args(&cmd);
+        }
+
+        let bar = ProgressBar::new(long.as_secs() + 1);
         bar.set_style(
             ProgressStyle::default_bar()
-                .template("{bar:50.cyan/white} {percent}% (estimated: {eta})"),
+                .template("[{elapsed_precise}] {bar:50.cyan/cyan} {percent}% (estimated: {eta})"),
         );
 
         get_progress(
@@ -192,18 +194,25 @@ fn pass1(args: EbuR128NormalizationPass1Args) -> Result<EbuLoudnessValues> {
             |progress| bar.set_position(progress.as_secs()),
         );
 
-        bar.finish();
+        bar.finish_and_clear();
     } else {
-        println!("Processing audio file to measure loudness values...");
+        println!("[1/2] Processing audio file to measure loudness values...");
+        if args.verbose {
+            dump_command_args(&cmd);
+        }
     }
 
-    get_result(BufReader::new(
+    let values = get_result(BufReader::new(
         child
             .stderr
             .take()
             .with_context(|| "Failed to open ffmpeg stderr")?,
     ))
-    .with_context(|| "Failed to get results of pass 2 normalization")
+    .with_context(|| "Failed to get results of pass 2 normalization")?;
+
+    println!("Done.");
+
+    Ok(values)
 }
 
 fn pass2(args: EbuR128NormalizationPass2Args) -> Result<EbuLoudnessValues> {
@@ -258,25 +267,21 @@ fn pass2(args: EbuR128NormalizationPass2Args) -> Result<EbuLoudnessValues> {
 
     cmd.arg("-c:s").arg("copy").arg(args.output_file);
 
-    if args.verbose {
-        println!("Running ffmpeg with the following arguments for pass 2:");
-        print!("[ ");
-        cmd.get_args()
-            .for_each(|arg| print!("{} ", arg.to_str().unwrap_or_default()));
-        println!("]");
-    }
-
     cmd.stdout(Stdio::piped()).stderr(Stdio::piped());
 
     let mut child = cmd.spawn().with_context(|| "Failed to run ffmpeg tool")?;
 
     if let Some(long) = args.input_file_duration {
-        println!("Normalizing audio file:");
+        println!("[2/2] Normalizing audio file:");
 
-        let bar = ProgressBar::new(long.as_secs());
+        if args.verbose {
+            dump_command_args(&cmd);
+        }
+
+        let bar = ProgressBar::new(long.as_secs() + 1);
         bar.set_style(
             ProgressStyle::default_bar()
-                .template("{bar:50.cyan/white} {percent}% (estimated: {eta})"),
+                .template("[{elapsed_precise}] {bar:50.cyan/cyan} {percent}% (estimated: {eta})"),
         );
 
         get_progress(
@@ -289,9 +294,13 @@ fn pass2(args: EbuR128NormalizationPass2Args) -> Result<EbuLoudnessValues> {
             |progress| bar.set_position(progress.as_secs()),
         );
 
-        bar.finish();
+        bar.finish_and_clear();
     } else {
-        println!("Normalizing audio file...");
+        println!("[2/2] Normalizing audio file...");
+
+        if args.verbose {
+            dump_command_args(&cmd);
+        }
     }
 
     let values = get_result(BufReader::new(
@@ -301,6 +310,66 @@ fn pass2(args: EbuR128NormalizationPass2Args) -> Result<EbuLoudnessValues> {
             .with_context(|| "Failed to open ffmpeg stderr")?,
     ))
     .with_context(|| "Failed to get results of pass 2 normalization")?;
+
+    println!("Done.");
+
+    if args.verbose {
+        println!(
+            "  input_i={}",
+            values.input_i.map_or("N/A".to_string(), |v| v.to_string())
+        );
+        println!(
+            "  input_tp={}",
+            values.input_tp.map_or("N/A".to_string(), |v| v.to_string())
+        );
+        println!(
+            "  input_lra={}",
+            values
+                .input_lra
+                .map_or("N/A".to_string(), |v| v.to_string())
+        );
+        println!(
+            "  input_thresh={}",
+            values
+                .input_thresh
+                .map_or("N/A".to_string(), |v| v.to_string())
+        );
+        println!(
+            "  output_i={}",
+            values.output_i.map_or("N/A".to_string(), |v| v.to_string())
+        );
+        println!(
+            "  output_tp={}",
+            values
+                .output_tp
+                .map_or("N/A".to_string(), |v| v.to_string())
+        );
+        println!(
+            "  output_lra={}",
+            values
+                .output_lra
+                .map_or("N/A".to_string(), |v| v.to_string())
+        );
+        println!(
+            "  output_thresh={}",
+            values
+                .output_thresh
+                .map_or("N/A".to_string(), |v| v.to_string())
+        );
+        println!(
+            "  normalization_type={}",
+            values
+                .normalization_type
+                .clone()
+                .unwrap_or_else(|| "N/A".to_string())
+        );
+        println!(
+            "  target_offset={}",
+            values
+                .target_offset
+                .map_or("N/A".to_string(), |v| v.to_string())
+        );
+    }
 
     let output_file_info =
         FFprobe::info(args.output_file).with_context(|| "Failed to get output file information")?;
@@ -317,10 +386,9 @@ fn pass2(args: EbuR128NormalizationPass2Args) -> Result<EbuLoudnessValues> {
         output_file_info
             .channel_layout()
             .unwrap_or_else(|| "N/A".to_string()),
-        match output_file_info.duration() {
-            None => "unknown".to_string(),
-            Some(duration) => duration.hhmmss(),
-        },
+        output_file_info
+            .duration()
+            .map_or("N/A".to_string(), |v| v.hhmmss()),
         output_file_info.bit_rate_as_txt(),
         output_file_info.sample_rate(),
     );
