@@ -16,7 +16,7 @@ props-rs = { version = "0" }
 regex = { version = "1" }
 lazy_static = { version = "1" }
 rayon = { version = "1" }
-indicatif = { version = "0", features = ["rayon"] }
+indicatif = { version = "0" }
 hhmmss = { version = "0" }
 
 [[bin]]
