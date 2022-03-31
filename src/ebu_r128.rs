@@ -1,4 +1,4 @@
-use crate::ffmpeg::{ffmpeg_file_path, get_progress, get_result, EbuLoudnessValues};
+use crate::ffmpeg::{EbuLoudnessValues, FFmpeg};
 use crate::ffprobe::{FFprobe, FileInfo};
 use anyhow::{anyhow, Context, Ok, Result};
 use hhmmss::Hhmmss;
@@ -134,7 +134,7 @@ fn pass1(args: EbuR128NormalizationPass1Args) -> Result<EbuLoudnessValues> {
         args.input_file_info.sample_rate(),
     );
 
-    let mut cmd = Command::new(ffmpeg_file_path());
+    let mut cmd = Command::new(FFmpeg::ffmpeg_path());
 
     cmd.arg("-progress")
         .arg("-")
@@ -184,7 +184,7 @@ fn pass1(args: EbuR128NormalizationPass1Args) -> Result<EbuLoudnessValues> {
                 .template("[{elapsed_precise}] {bar:50.cyan/cyan} {percent}% (estimated: {eta})"),
         );
 
-        get_progress(
+        FFmpeg::progress(
             BufReader::new(
                 child
                     .stdout
@@ -202,7 +202,7 @@ fn pass1(args: EbuR128NormalizationPass1Args) -> Result<EbuLoudnessValues> {
         }
     }
 
-    let values = get_result(BufReader::new(
+    let values = FFmpeg::result(BufReader::new(
         child
             .stderr
             .take()
@@ -284,7 +284,7 @@ fn pass2(args: EbuR128NormalizationPass2Args) -> Result<EbuLoudnessValues> {
                 .template("[{elapsed_precise}] {bar:50.cyan/cyan} {percent}% (estimated: {eta})"),
         );
 
-        get_progress(
+        FFmpeg::progress(
             BufReader::new(
                 child
                     .stdout
@@ -303,7 +303,7 @@ fn pass2(args: EbuR128NormalizationPass2Args) -> Result<EbuLoudnessValues> {
         }
     }
 
-    let values = get_result(BufReader::new(
+    let values = FFmpeg::result(BufReader::new(
         child
             .stderr
             .take()
