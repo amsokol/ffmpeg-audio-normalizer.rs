@@ -22,3 +22,7 @@ hhmmss = { version = "0" }
 [[bin]]
 name = "ffmpeg-audio-normalizer"
 path = "src/main.rs"
+
+[profile.release-striped]
+inherits = "release"
+strip = true
