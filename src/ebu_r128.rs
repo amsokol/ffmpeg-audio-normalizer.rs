@@ -136,17 +136,26 @@ fn pass1(args: EbuR128NormalizationPass1Args) -> Result<EbuLoudnessValues> {
 
     let mut cmd = Command::new(FFmpeg::ffmpeg_path());
 
-    cmd.arg("-progress")
+    cmd
+        // send program-friendly progress information to stdout
+        .arg("-progress")
         .arg("-")
+        // disable print encoding progress/statistics
         .arg("-nostats")
+        // explicitly disable interaction you need to specify
         .arg("-nostdin")
-        .arg("-y")
+        // overwrite output files without asking
+        // .arg("-y")
+        // suppress printing banner
         .arg("-hide_banner")
+        // input file
         .arg("-i")
         .arg(args.input_file)
-        .arg("-filter_complex")
+        // .arg("-filter_complex")
+        .arg("-filter")
         .arg(format!(
-            "[0:0]loudnorm=i={}:lra={}:tp={}:offset={}:print_format=json",
+            // "[0:0]loudnorm=i={}:lra={}:tp={}:offset={}:print_format=json",
+            "loudnorm=i={}:lra={}:tp={}:offset={}:print_format=json",
             args.target_level, args.loudness_range_target, args.true_peak, args.offset
         ));
 
@@ -161,11 +170,20 @@ fn pass1(args: EbuR128NormalizationPass1Args) -> Result<EbuLoudnessValues> {
         cmd.arg("-c:a").arg(args.input_file_codec_name.unwrap());
     }
 
+    // custom args
     args.ffmpeg_args.iter().for_each(|arg| {
         cmd.arg(arg);
     });
 
-    cmd.arg("-vn").arg("-sn").arg("-f").arg("null").arg("-");
+    cmd
+        // As an input option, blocks all video streams. As an output option, disables video recording.
+        // .arg("-vn")
+        // As an input option, blocks all subtitle streams. As an output option, disables subtitle recording.
+        // .arg("-sn")
+        // output file is NULL
+        .arg("-f")
+        .arg("null")
+        .arg("-");
 
     cmd.stdout(Stdio::piped()).stderr(Stdio::piped());
 
@@ -219,7 +237,8 @@ fn pass2(args: EbuR128NormalizationPass2Args) -> Result<EbuLoudnessValues> {
     let mut cmd = Command::new("ffmpeg");
 
     let mut filter = format!(
-        "[0:0]loudnorm=i={}:lra={}:tp={}:offset={}",
+        // "[0:0]loudnorm=i={}:lra={}:tp={}:offset={}",
+        "loudnorm=i={}:lra={}:tp={}:offset={}",
         args.target_level, args.loudness_range_target, args.true_peak, args.offset
     );
 
@@ -229,26 +248,42 @@ fn pass2(args: EbuR128NormalizationPass2Args) -> Result<EbuLoudnessValues> {
     )
     .as_str();
 
-    cmd.arg("-progress")
+    cmd
+        // send program-friendly progress information to stdout
+        .arg("-progress")
         .arg("-")
+        // disable print encoding progress/statistics
         .arg("-nostats")
-        .arg("-y")
+        // explicitly disable interaction you need to specify
         .arg("-nostdin")
+        // suppress printing banner
         .arg("-hide_banner")
+        // input file
         .arg("-i")
         .arg(args.input_file)
-        .arg("-filter_complex")
-        .arg(filter + ":linear=true:print_format=json[norm0]")
-        .arg("-map_metadata")
-        .arg("0")
-        .arg("-map_metadata:s:a:0")
-        .arg("0:s:a:0")
-        .arg("-map_chapters")
-        .arg("0")
-        .arg("-c:v")
-        .arg("copy")
-        .arg("-map")
-        .arg("[norm0]");
+        // .arg("-filter_complex")
+        .arg("-filter")
+        // .arg(filter + ":linear=true:print_format=json[norm0]")
+        .arg(filter + ":linear=true:print_format=json")
+        // Set metadata information of the next output file from infile.
+        // .arg("-map_metadata")
+        // .arg("0")
+        // .arg("-map_metadata:s:a:0")
+        // .arg("0:s:a:0")
+        // Copy chapters from input file with index input_file_index to the next output file.
+        // .arg("-map_chapters")
+        // .arg("0")
+        // Select an encoder (when used before an output file) or a decoder (when used before an input file)
+        // for one or more streams. codec is the name of a decoder/encoder or a special value copy (output only)
+        // to indicate that the stream is not to be re-encoded.
+        // .arg("-c:v")
+        // .arg("copy")
+        // .arg("-c:s")
+        // .arg("copy")
+        // Designate one or more input streams as a source for the output file.
+        // .arg("-map")
+        // .arg("[norm0]")
+        ;
 
     // set bit rate
     if args.input_file_bit_rate.is_some() {
@@ -261,11 +296,15 @@ fn pass2(args: EbuR128NormalizationPass2Args) -> Result<EbuLoudnessValues> {
         cmd.arg("-c:a").arg(args.input_file_codec_name.unwrap());
     }
 
+    // custom args
     args.ffmpeg_args.iter().for_each(|arg| {
         cmd.arg(arg);
     });
 
-    cmd.arg("-c:s").arg("copy").arg(args.output_file);
+    cmd
+        // overwrite output files without asking
+        .arg("-y")
+        .arg(args.output_file);
 
     cmd.stdout(Stdio::piped()).stderr(Stdio::piped());
 
