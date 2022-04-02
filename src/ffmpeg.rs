@@ -5,7 +5,11 @@ use std::env::consts::OS;
 use std::env::current_dir;
 use std::io::{BufRead, BufReader, Read};
 use std::path::{Path, PathBuf};
-use std::time::Duration;
+
+pub enum Progress {
+    OutTime(u64),
+    End,
+}
 
 #[derive(Debug, Default)]
 pub struct EbuLoudnessValues {
@@ -22,8 +26,7 @@ pub struct EbuLoudnessValues {
 }
 
 lazy_static! {
-    static ref RE_DURATION: Regex =
-        Regex::new(r#"^\s*out_time\s*=\s*(\d\d):(\d\d):(\d\d).*$"#).unwrap();
+    static ref RE_DURATION: Regex = Regex::new(r#"^\s*out_time_ms\s*=\s*(\d+).*$"#).unwrap();
     static ref RE_VALUES: Regex = Regex::new(r#"^\s*"(\S+)"\s*:\s*"(\S+)",?\s*$"#).unwrap();
 }
 
@@ -49,42 +52,22 @@ impl FFmpeg {
 
     pub fn progress<R: Read, F>(reader: BufReader<R>, f: F)
     where
-        F: Fn(Duration),
+        F: Fn(Progress),
     {
         reader
             .lines()
             .filter_map(|line| line.ok())
             .for_each(|line| {
-                if let Some(d) = FFmpeg::parse_duration(&line) {
-                    f(d);
+                if line == "progress=end" {
+                    f(Progress::End);
+                } else if let Some(m) = RE_DURATION.captures(line.as_str()) {
+                    if let Some(ms) = m.get(1).map(|m| m.as_str()) {
+                        if let Ok(ms) = ms.parse::<u64>() {
+                            f(Progress::OutTime(ms))
+                        }
+                    }
                 }
             });
-    }
-
-    fn parse_duration(val: &str) -> Option<Duration> {
-        if let Some(m) = RE_DURATION.captures(val) {
-            let hh = m.get(1).map_or("", |m| m.as_str());
-            let mm = m.get(2).map_or("", |m| m.as_str());
-            let ss = m.get(3).map_or("", |m| m.as_str());
-
-            let mut progress_in_seconds: u64 = 0;
-
-            if let Ok(hours) = hh.parse::<u64>() {
-                progress_in_seconds += hours * 60 * 60;
-
-                if let Ok(minutes) = mm.parse::<u64>() {
-                    progress_in_seconds += minutes * 60;
-
-                    if let Ok(seconds) = ss.parse::<u64>() {
-                        progress_in_seconds += seconds;
-                    }
-
-                    return Some(Duration::from_secs(progress_in_seconds));
-                }
-            }
-        }
-
-        None
     }
 
     pub fn result<R: Read>(reader: BufReader<R>) -> Result<EbuLoudnessValues> {

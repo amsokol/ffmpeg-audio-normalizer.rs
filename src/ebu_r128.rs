@@ -1,4 +1,4 @@
-use crate::ffmpeg::{EbuLoudnessValues, FFmpeg};
+use crate::ffmpeg::{EbuLoudnessValues, FFmpeg, Progress};
 use crate::ffprobe::{FFprobe, FileInfo};
 use anyhow::{anyhow, Context, Ok, Result};
 use hhmmss::Hhmmss;
@@ -196,7 +196,7 @@ fn pass1(args: EbuR128NormalizationPass1Args) -> Result<EbuLoudnessValues> {
             dump_command_args(&cmd);
         }
 
-        let bar = ProgressBar::new(long.as_secs() + 1);
+        let bar = ProgressBar::new(long.as_micros() as u64);
         bar.set_style(
             ProgressStyle::default_bar()
                 .template("[{elapsed_precise}] {bar:50.cyan/cyan} {percent}% (estimated: {eta})"),
@@ -209,10 +209,11 @@ fn pass1(args: EbuR128NormalizationPass1Args) -> Result<EbuLoudnessValues> {
                     .take()
                     .with_context(|| "Failed to open ffmpeg stdout")?,
             ),
-            |progress| bar.set_position(progress.as_secs()),
+            |progress| match progress {
+                Progress::OutTime(ms) => bar.set_position(ms),
+                Progress::End => bar.finish(),
+            },
         );
-
-        bar.finish_and_clear();
     } else {
         println!("[1/2] Processing audio file to measure loudness values...");
         if args.verbose {
@@ -227,8 +228,6 @@ fn pass1(args: EbuR128NormalizationPass1Args) -> Result<EbuLoudnessValues> {
             .with_context(|| "Failed to open ffmpeg stderr")?,
     ))
     .with_context(|| "Failed to get results of pass 2 normalization")?;
-
-    println!("Done.");
 
     Ok(values)
 }
@@ -317,7 +316,7 @@ fn pass2(args: EbuR128NormalizationPass2Args) -> Result<EbuLoudnessValues> {
             dump_command_args(&cmd);
         }
 
-        let bar = ProgressBar::new(long.as_secs() + 1);
+        let bar = ProgressBar::new(long.as_micros() as u64);
         bar.set_style(
             ProgressStyle::default_bar()
                 .template("[{elapsed_precise}] {bar:50.cyan/cyan} {percent}% (estimated: {eta})"),
@@ -330,10 +329,11 @@ fn pass2(args: EbuR128NormalizationPass2Args) -> Result<EbuLoudnessValues> {
                     .take()
                     .with_context(|| "Failed to open ffmpeg stdout")?,
             ),
-            |progress| bar.set_position(progress.as_secs()),
+            |progress| match progress {
+                Progress::OutTime(ms) => bar.set_position(ms),
+                Progress::End => bar.finish(),
+            },
         );
-
-        bar.finish_and_clear();
     } else {
         println!("[2/2] Normalizing audio file...");
 
@@ -349,8 +349,6 @@ fn pass2(args: EbuR128NormalizationPass2Args) -> Result<EbuLoudnessValues> {
             .with_context(|| "Failed to open ffmpeg stderr")?,
     ))
     .with_context(|| "Failed to get results of pass 2 normalization")?;
-
-    println!("Done.");
 
     if args.verbose {
         println!(
