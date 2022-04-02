@@ -60,12 +60,12 @@ impl FFmpeg {
             .for_each(|line| {
                 if line == "progress=end" {
                     f(Progress::End);
-                } else if let Some(m) = RE_DURATION.captures(line.as_str()) {
-                    if let Some(ms) = m.get(1).map(|m| m.as_str()) {
-                        if let Ok(ms) = ms.parse::<u64>() {
-                            f(Progress::OutTime(ms))
-                        }
-                    }
+                } else if let Some(ms) = RE_DURATION
+                    .captures(line.as_str())
+                    .and_then(|m| m.get(1).map(|m| m.as_str()))
+                    .and_then(|ms| ms.parse::<u64>().ok())
+                {
+                    f(Progress::OutTime(ms))
                 }
             });
     }
