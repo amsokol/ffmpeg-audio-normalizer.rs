@@ -59,7 +59,6 @@ impl FFprobe {
         path
     }
 }
-
 pub struct FileInfo {
     properties: Vec<Property>,
 }
@@ -76,14 +75,6 @@ impl FileInfo {
         self.property("codec_name")
     }
 
-    pub fn channels(&self) -> Option<String> {
-        self.property("channels")
-    }
-
-    pub fn channel_layout(&self) -> Option<String> {
-        self.property("channel_layout")
-    }
-
     pub fn duration(&self) -> Option<Duration> {
         self.property("duration").and_then(|d| {
             d.parse::<f64>()
@@ -95,20 +86,5 @@ impl FileInfo {
     pub fn bit_rate(&self) -> Option<i64> {
         self.property("bit_rate")
             .and_then(|b| b.parse::<i64>().ok())
-    }
-
-    pub fn bit_rate_as_txt(&self) -> String {
-        self.bit_rate()
-            .map_or("N/A".to_string(), |b| format!("{} kb/s", b / 1000))
-    }
-
-    pub fn sample_rate(&self) -> String {
-        self.property("sample_rate")
-            .and_then(|r| {
-                r.parse::<f64>()
-                    .map(|r| format!("{:.1} kHz", r / 1000.0))
-                    .ok()
-            })
-            .unwrap_or_else(|| "N/A".to_string())
     }
 }

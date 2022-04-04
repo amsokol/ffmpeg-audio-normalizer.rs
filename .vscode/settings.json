@@ -1,11 +1,18 @@
 {
     "cSpell.words": [
+        "astats",
+        "consts",
         "dialnorm",
         "ffprobe",
+        "hhmmss",
+        "indicatif",
         "loudnorm",
         "LUFS",
         "noprint",
         "nostats",
-        "nostdin"
+        "nostdin",
+        "perchannel",
+        "slhck",
+        "trunc"
     ]
 }

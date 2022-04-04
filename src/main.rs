@@ -1,12 +1,13 @@
+mod algorithm;
 mod cli;
-mod ebu_r128;
-mod ffmpeg;
-mod ffprobe;
+mod tool;
 
+use algorithm::ebu_r128;
+use algorithm::peak;
+use algorithm::rms;
 use anyhow::Result;
 use clap::Parser;
 use cli::{Cli, Command};
-use ebu_r128::{normalize_ebu_r128, EbuR128NormalizationArgs};
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
@@ -19,17 +20,40 @@ fn main() -> Result<()> {
             offset,
             ffmpeg_args,
         } => {
-            let args = EbuR128NormalizationArgs {
+            let args = ebu_r128::NormalizationArgs {
                 verbose: cli.verbose,
                 input_file: &cli.input_file,
                 output_file: &cli.output_file,
+                overwrite: cli.overwrite,
                 target_level,
                 loudness_range_target,
                 true_peak,
                 offset,
                 ffmpeg_args: &ffmpeg_args,
             };
-            normalize_ebu_r128(args)
+            ebu_r128::normalize(args)
         }
+        Command::Rms {
+            target_level,
+            ffmpeg_args,
+        } => rms::normalize(rms::NormalizationArgs {
+            verbose: cli.verbose,
+            input_file: &cli.input_file,
+            output_file: &cli.output_file,
+            overwrite: cli.overwrite,
+            target_level,
+            ffmpeg_args: &ffmpeg_args,
+        }),
+        Command::Peak {
+            target_level,
+            ffmpeg_args,
+        } => peak::normalize(peak::NormalizationArgs {
+            verbose: cli.verbose,
+            input_file: &cli.input_file,
+            output_file: &cli.output_file,
+            overwrite: cli.overwrite,
+            target_level,
+            ffmpeg_args: &ffmpeg_args,
+        }),
     }
 }
