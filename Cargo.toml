@@ -23,6 +23,9 @@ hhmmss = { version = "0" }
 name = "ffmpeg-audio-normalizer"
 path = "src/main.rs"
 
-[profile.release-striped]
+[profile.release-ex]
 inherits = "release"
 strip = true
+lto = true
+codegen-units = 1
+panic = "abort"
