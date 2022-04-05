@@ -1,3 +1,4 @@
+use crate::algorithm::io::to_stdout;
 use crate::tool::ffmpeg::FFmpeg;
 use crate::tool::ffprobe::{FFprobe, FileInfo};
 use anyhow::{bail, Context, Result};
@@ -199,10 +200,7 @@ fn pass2(args: NormalizationPass2Args) -> Result<()> {
         )
         .with_context(|| "Failed to normalizing audio file")?;
 
-    reader
-        .lines()
-        .filter_map(|line| line.ok())
-        .for_each(|line| println!("{line}"));
+    to_stdout(reader);
 
     Ok(())
 }

@@ -146,6 +146,8 @@ impl FFmpeg {
             bail!("Failed to open ffmpeg stdout");
         }
 
+        _ = child.wait();
+
         Ok(BufReader::new(
             child
                 .stderr
