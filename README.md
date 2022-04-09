@@ -62,9 +62,9 @@ For more information, run `ffmpeg-audio-normalizer -h`, or read on.
 
     ffmpeg-audio-normalizer -i /path/to/your/audio.ac3 -o /path/to/your/audio.ebu-r128.ac3 ebu -- -dialnorm -31
 
-    ffmpeg-audio-normalizer -i /path/to/your/audio.ac3 -o /path/to/your/audio.ebu-r128.eac3 rms -- -c:a eac3 -b:a 1509k -ar 48000 -dialnorm -31
+    ffmpeg-audio-normalizer --verbose -i /path/to/your/audio.dts -o /path/to/your/audio.ebu-r128.eac3 rms -- -c:a eac3 -b:a 1509k -ar 48000 -dialnorm -31
 
-    ffmpeg-audio-normalizer -i /path/to/your/audio.ac3 -o /path/to/your/audio.ebu-r128.eac3 peak --target-level 0 -- -c:a eac3 -b:a 1509k -ar 48000 -dialnorm -31
+    ffmpeg-audio-normalizer -i /path/to/your/audio.dts -o /path/to/your/audio.ebu-r128.eac3 --overwrite peak --target-level 0 -- -c:a eac3 -b:a 1509k -ar 48000 -dialnorm -31
 
 ## Description
 
