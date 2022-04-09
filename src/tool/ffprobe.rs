@@ -64,14 +64,14 @@ pub struct FileInfo {
 }
 
 impl FileInfo {
-    fn property(&self, name: &str) -> Option<String> {
+    fn property<'a>(&'a self, name: &str) -> Option<&'a str> {
         self.properties
             .iter()
             .find(|p| name == p.key)
-            .map(|p| p.value.clone())
+            .map(|p| p.value.as_str())
     }
 
-    pub fn codec_name(&self) -> Option<String> {
+    pub fn codec_name(&self) -> Option<&str> {
         self.property("codec_name")
     }
 

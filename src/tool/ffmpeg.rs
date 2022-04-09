@@ -113,7 +113,7 @@ impl FFmpeg {
         if duration.is_some() {
             bar.set_style(
                 ProgressStyle::default_bar().template(
-                    "[{elapsed_precise}] {bar:50.cyan/cyan} {percent}% (estimated: {eta})",
+                    "[{elapsed_precise}] {bar:50.cyan/cyan} {percent}% (remaining: {eta})",
                 ),
             );
         } else {
