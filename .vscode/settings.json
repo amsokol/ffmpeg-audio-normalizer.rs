@@ -4,7 +4,6 @@
         "consts",
         "dialnorm",
         "ffprobe",
-        "hhmmss",
         "indicatif",
         "loudnorm",
         "LUFS",
