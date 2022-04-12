@@ -64,7 +64,7 @@ pub struct FileInfo {
 }
 
 impl FileInfo {
-    fn property<'a>(&'a self, name: &str) -> Option<&'a str> {
+    fn property(&self, name: &str) -> Option<&str> {
         self.properties
             .iter()
             .find(|p| name == p.key)
