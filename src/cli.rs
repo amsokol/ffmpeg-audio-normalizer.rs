@@ -107,6 +107,26 @@ pub enum Command {
         )]
         ffmpeg_args: Vec<String>,
     },
+    /// Dialogue normalization indicates how far the average dialogue level of the program is below digital 100%
+    /// full scale (0 dBFS).
+    Dialogue {
+        /// Dialogue normalization target level determines a level shift during audio reproduction
+        /// that sets the average volume of the dialogue to a preset level.
+        /// The goal is to match volume level between program sources.
+        /// A value of -31dB will result in no volume level change, relative to the source volume,
+        /// during audio reproduction. Valid values are whole numbers in the range -31 to -1.
+        #[clap(long, default_value = "-31", allow_hyphen_values = true, validator=dialnorm_target_level_validator)]
+        target_level: i8,
+
+        /// Custom arguments for ffmpeg to override default values, e.g. "-c:a ac3 -b:a 640k -ar 48000"
+        #[clap(
+            last = true,
+            value_name = "ffmpeg_arguments",
+            multiple_values = true,
+            allow_hyphen_values = true
+        )]
+        ffmpeg_args: Vec<String>,
+    },
 }
 
 fn ebu_target_level_validator(s: &str) -> Result<(), String> {
@@ -167,4 +187,14 @@ fn peak_target_level_validator(s: &str) -> Result<(), String> {
     }
 
     Err("Peak target level range is [-99.0 .. 0.0].".to_string())
+}
+
+fn dialnorm_target_level_validator(s: &str) -> Result<(), String> {
+    if let Ok(v) = s.parse::<i8>() {
+        if (-31..=-1).contains(&v) {
+            return Ok(());
+        }
+    }
+
+    Err("Dialogue normalization target level range is [-31 .. -1].".to_string())
 }

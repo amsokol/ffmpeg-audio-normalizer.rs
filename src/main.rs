@@ -2,6 +2,7 @@ mod algorithm;
 mod cli;
 mod tool;
 
+use algorithm::dialogue;
 use algorithm::ebu_r128;
 use algorithm::peak;
 use algorithm::rms;
@@ -48,6 +49,17 @@ fn main() -> Result<()> {
             target_level,
             ffmpeg_args,
         } => peak::normalize(peak::NormalizationArgs {
+            verbose: cli.verbose,
+            input_file: &cli.input_file,
+            output_file: &cli.output_file,
+            overwrite: cli.overwrite,
+            target_level,
+            ffmpeg_args: &ffmpeg_args,
+        }),
+        Command::Dialogue {
+            target_level,
+            ffmpeg_args,
+        } => dialogue::normalize(dialogue::NormalizationArgs {
             verbose: cli.verbose,
             input_file: &cli.input_file,
             output_file: &cli.output_file,
