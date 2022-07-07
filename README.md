@@ -5,7 +5,7 @@ A utility for normalizing audio using ffmpeg.
 Inspired by [ffmpeg-normalize](https://github.com/slhck/ffmpeg-normalize) Python tool.
 All credits go to [@slhck](https://github.com/slhck).
 
-This program normalizes media files to a certain loudness level using the EBU R128 loudness normalization procedure. It can also perform RMS-based normalization (where the mean is lifted or attenuated), or peak normalization to a certain target level.
+This program normalizes media files to a certain loudness level using the EBU R128 loudness normalization procedure. It can also perform RMS-based normalization (where the mean is lifted or attenuated), or peak normalization to a certain target level. It allows to set dialogue level too.
 
 **A very quick how-to:**
 
@@ -26,6 +26,7 @@ Read on for more info.
   - [EBU R128 normalization (`ebu` subcommand)](#ebu-r128-normalization-ebu-subcommand)
   - [RMS-based normalization (`rms` subcommand)](#rms-based-normalization-rms-subcommand)
   - [Peak normalization (`peak` subcommand)](#peak-normalization-peak-subcommand)
+  - [Set dialogue level (`dialogue` subcommand)](#set-dialogue-level-dialogue-subcommand)
   - [FFmpeg parameters](#ffmpeg-parameters)
 
 ## Requirements
@@ -51,10 +52,11 @@ Build or download from [Releases](https://github.com/amsokol/ffmpeg-audio-normal
         -V, --version                      Print version information
 
     SUBCOMMANDS:
-        ebu     EBU normalization performs two passes and normalizes according to EBU R128
-        rms     RMS-based normalization brings the input file to the specified RMS level
-        peak    Peak normalization brings the signal to the specified peak level
-        help    Print this message or the help of the given subcommand(s)
+        ebu         EBU normalization performs two passes and normalizes according to EBU R128
+        rms         RMS-based normalization brings the input file to the specified RMS level
+        peak        Peak normalization brings the signal to the specified peak level
+        dialogue    Dialogue normalization indicates how far the average dialogue level of the program is below digital 100% full scale (0 dBFS)
+        help        Print this message or the help of the given subcommand(s)
 
 For more information, run `ffmpeg-audio-normalizer -h`, or read on.
 
@@ -65,6 +67,8 @@ For more information, run `ffmpeg-audio-normalizer -h`, or read on.
     ffmpeg-audio-normalizer --verbose -i /path/to/your/audio.dts -o /path/to/your/audio.ebu-r128.eac3 rms -- -c:a eac3 -b:a 1509k -ar 48000 -dialnorm -31
 
     ffmpeg-audio-normalizer -i /path/to/your/audio.dts -o /path/to/your/audio.ebu-r128.eac3 --overwrite peak --target-level 0 -- -c:a eac3 -b:a 1509k -ar 48000 -dialnorm -31
+
+    ffmpeg-audio-normalizer -i /path/to/your/audio.ac3 -o /path/to/your/audio.dn-31.ac3 dialogue --target-level -31
 
 ## Description
 
@@ -126,6 +130,18 @@ Run for details:
 Options:
 
 - `--target-level`: Normalization target level in dB/LUFS. The range is [-99.0 .. 0.0] [default: -23.0]
+
+### Set dialogue level (`dialogue` subcommand)
+
+Dialogue normalization indicates how far the average dialogue level of the program is below digital 100% full scale (0 dBFS).
+
+Run for details:
+
+    ffmpeg-audio-normalizer help dialogue
+
+Options:
+
+- `--target-level`: Dialogue normalization target level determines a level shift during audio reproduction that sets the average volume of the dialogue to a preset level. The goal is to match volume level between program sources. A value of -31dB will result in no volume level change, relative to the source volume, during audio reproduction. Valid values are whole numbers in the range -31 to -1 [default: -31]
 
 ### FFmpeg parameters
 
