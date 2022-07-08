@@ -1,7 +1,7 @@
 [package]
 name = "ffmpeg-audio-normalizer"
 authors = ["Aleksandr Sokolovskii <amsokol+github@gmail.com>"]
-version = "1.1.1"
+version = "1.1.2"
 repository = "https://github.com/amsokol/ffmpeg-audio-normalizer.rs"
 description = "Command line tool for normalizing audio files."
 license = "MIT"
