@@ -4,6 +4,7 @@ use crate::tool::ffprobe::{FFprobe, FileInfo};
 use anyhow::{bail, Context, Result};
 use lazy_static::lazy_static;
 use regex::Regex;
+use std::fmt::Write as _;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
 use std::process::ChildStderr;
@@ -150,7 +151,7 @@ fn result_pass1(reader: BufReader<ChildStderr>) -> Result<f64> {
                     value = v;
                     values_found = true;
                 } else {
-                    err_parse += &format!("Failed to parse RMS level value: {}\n", line);
+                    let _ = writeln!(err_parse, "Failed to parse RMS level value: {}", line);
                 }
             } else {
                 // log error in case of problems

@@ -4,6 +4,7 @@ use crate::tool::ffprobe::{FFprobe, FileInfo};
 use anyhow::{bail, Context, Result};
 use lazy_static::lazy_static;
 use regex::Regex;
+use std::fmt::Write as _;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
 use std::process::ChildStderr;
@@ -263,14 +264,17 @@ fn result_pass1(reader: BufReader<ChildStderr>) -> Result<LoudnessValues> {
                                         "output_thresh" => values.output_thresh = value,
                                         "target_offset" => values.target_offset = value,
                                         _ => {
-                                            err_parse +=
-                                                &format!("Unknown loudness value: {}\n", line);
+                                            let _ = writeln!(
+                                                err_parse,
+                                                "Unknown loudness value: {}",
+                                                line
+                                            );
                                             return;
                                         }
                                     }
                                     values_count += 1;
                                 } else {
-                                    err_parse += &format!("Invalid loudness value: {}\n", line);
+                                    let _ = writeln!(err_parse, "Invalid loudness value: {}", line);
                                 }
                             }
                         }
@@ -279,7 +283,7 @@ fn result_pass1(reader: BufReader<ChildStderr>) -> Result<LoudnessValues> {
                     }
                 }
             }
-            err_parse += &format!("Failed to parse loudness value: {}\n", line);
+            let _ = writeln!(err_parse, "Failed to parse loudness value: {}", line);
         });
 
     if values_count == 0 {
