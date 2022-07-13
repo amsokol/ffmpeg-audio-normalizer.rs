@@ -101,7 +101,7 @@ Options:
 
 - `--target-level`: Normalization target level in dB/LUFS. It corresponds to Integrated Loudness Target in LUFS. The range is [-70.0 .. -5.0] [default: -23.0]
 
-- `--loudness-range-target`: Loudness Range Target in LUFS. Range is [+1.0 .. +20.0] [default: 7.0]
+- `--loudness-range-target`: Loudness Range Target in LUFS. Range is [+1.0 .. +50.0] [default: 7.0]
 
 - `--true-peak`: Maximum True Peak in dBTP. Range is [-9.0 .. 0.0] [default: -2.0]
 

@@ -45,7 +45,7 @@ pub enum Command {
         target_level: f64,
 
         /// Loudness Range Target in LUFS.
-        /// Range is [+1.0 .. +20.0].
+        /// Range is [+1.0 .. +50.0].
         #[clap(
             long,
             default_value = "7.0",
@@ -141,12 +141,12 @@ fn ebu_target_level_validator(s: &str) -> Result<(), String> {
 
 fn ebu_loudness_range_target_validator(s: &str) -> Result<(), String> {
     if let Ok(v) = s.parse::<f64>() {
-        if (1.0..=20.0).contains(&v) {
+        if (1.0..=50.0).contains(&v) {
             return Ok(());
         }
     }
 
-    Err("EBU R12 loudness range target range is [+1.0 .. +20.0].".to_string())
+    Err("EBU R12 loudness range target range is [+1.0 .. +50.0].".to_string())
 }
 
 fn ebu_true_peak_validator(s: &str) -> Result<(), String> {
