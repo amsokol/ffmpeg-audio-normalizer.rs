@@ -16,11 +16,11 @@ clap = { version = "3.2", features = [
     "color",
     "cargo",
 ] }
-anyhow = { version = "1.0" }
-props-rs = { version = "0.1" }
-regex = { version = "1.5" }
-lazy_static = { version = "1.4" }
-indicatif = { version = "0.16" }
+anyhow = { version = "1" }
+props-rs = { version = "0" }
+regex = { version = "1" }
+lazy_static = { version = "1" }
+indicatif = { version = "0" }
 
 [[bin]]
 name = "ffmpeg-audio-normalizer"
