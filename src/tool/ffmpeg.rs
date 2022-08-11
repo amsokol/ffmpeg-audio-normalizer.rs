@@ -110,17 +110,16 @@ impl FFmpeg {
                 .as_micros() as u64,
         );
 
-        if duration.is_some() {
-            bar.set_style(
-                ProgressStyle::default_bar().template(
-                    "[{elapsed_precise}] {bar:50.cyan/cyan} {percent}% (remaining: {eta})",
-                ),
-            );
-        } else {
-            bar.set_style(
-                ProgressStyle::default_bar().template("[{elapsed_precise}] {spinner:.cyan}"),
-            );
-        }
+        bar.set_style(
+            if duration.is_some() {
+                    ProgressStyle::default_bar().template(
+                        "[{elapsed_precise}] {bar:50.cyan/cyan} {percent}% (remaining: {eta})",
+                    )
+            } else {
+                    ProgressStyle::default_bar().template("[{elapsed_precise}] {spinner:.cyan}")
+            }.unwrap_or_else(|_| ProgressStyle::default_bar())
+        );
+
         bar.set_position(0);
 
         if let Some(stdout) = child.stdout.take() {
@@ -146,7 +145,7 @@ impl FFmpeg {
             bail!("Failed to open ffmpeg stdout");
         }
 
-        _ = child.wait();
+        let _ = child.wait();
 
         Ok(BufReader::new(
             child

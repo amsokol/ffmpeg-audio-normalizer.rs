@@ -151,6 +151,6 @@ Example:
 
     ffmpeg-audio-normalizer -i ./audio.ac3 -o ./audio.ebu-r128.eac3 ebu -- -c:a eac3 -b:a 1509k -ar 48000 -dialnorm -31
 
-**NOTES**: PowerShell for Windows splits parameter with `:`. So therefore such parameters must be in quotes. Example:
+**NOTES**: PowerShell for Windows splits parameter with `:`, therefore such parameters must be in quotes. Example:
 
     ffmpeg-audio-normalizer -i ./audio.ac3 -o ./audio.ebu-r128.eac3 ebu -- "-c:a" eac3 "-b:a" 1509k -ar 48000 -dialnorm -31

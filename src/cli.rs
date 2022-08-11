@@ -161,12 +161,12 @@ pub enum Command {
 }
 
 #[derive(Copy, Clone, Debug)]
-pub struct RangedF64ValueParser<T: std::convert::TryFrom<f64> = f64> {
+pub struct RangedF64ValueParser<T: TryFrom<f64> = f64> {
     bounds: (std::ops::Bound<f64>, std::ops::Bound<f64>),
     target: std::marker::PhantomData<T>,
 }
 
-impl<T: std::convert::TryFrom<f64>> RangedF64ValueParser<T> {
+impl<T: TryFrom<f64>> RangedF64ValueParser<T> {
     /// Select full range of `f64`
     pub fn new() -> Self {
         Self::from(..)
@@ -214,10 +214,10 @@ impl<T: std::convert::TryFrom<f64>> RangedF64ValueParser<T> {
     }
 }
 
-impl<T: std::convert::TryFrom<f64> + Clone + Send + Sync + 'static> TypedValueParser
+impl<T: TryFrom<f64> + Clone + Send + Sync + 'static> TypedValueParser
     for RangedF64ValueParser<T>
 where
-    <T as std::convert::TryFrom<f64>>::Error: Send + Sync + 'static + std::error::Error + ToString,
+    <T as TryFrom<f64>>::Error: Send + Sync + 'static + std::error::Error + ToString,
 {
     type Value = f64;
 
@@ -226,7 +226,7 @@ where
         _: &clap::Command,
         arg: Option<&clap::Arg>,
         raw_value: &std::ffi::OsStr,
-    ) -> Result<Self::Value, clap::Error> {
+    ) -> Result<Self::Value, Error> {
         let value = raw_value.to_str().ok_or_else(|| {
             Error::raw(
                 ErrorKind::InvalidUtf8,
@@ -267,7 +267,7 @@ where
     }
 }
 
-impl<T: std::convert::TryFrom<f64>, B: RangeBounds<f64>> From<B> for RangedF64ValueParser<T> {
+impl<T: TryFrom<f64>, B: RangeBounds<f64>> From<B> for RangedF64ValueParser<T> {
     fn from(range: B) -> Self {
         Self {
             bounds: (range.start_bound().cloned(), range.end_bound().cloned()),
@@ -276,7 +276,7 @@ impl<T: std::convert::TryFrom<f64>, B: RangeBounds<f64>> From<B> for RangedF64Va
     }
 }
 
-impl<T: std::convert::TryFrom<f64>> Default for RangedF64ValueParser<T> {
+impl<T: TryFrom<f64>> Default for RangedF64ValueParser<T> {
     fn default() -> Self {
         Self::new()
     }
