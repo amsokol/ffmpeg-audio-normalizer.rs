@@ -10,12 +10,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-clap = { version = "3.2", features = [
-    "derive",
-    "suggestions",
-    "color",
-    "cargo",
-] }
+clap = { version = "3", features = ["derive", "suggestions", "color", "cargo"] }
 anyhow = { version = "1" }
 props-rs = { version = "0" }
 regex = { version = "1" }
@@ -26,9 +21,7 @@ indicatif = { version = "0" }
 name = "ffmpeg-audio-normalizer"
 path = "src/main.rs"
 
-[profile.release-ex]
-inherits = "release"
-strip = true
-lto = true
+[profile.release]
 codegen-units = 1
-panic = "abort"
+lto = true
+strip = true
