@@ -104,7 +104,7 @@ pub fn normalize(args: NormalizationArgs) -> Result<()> {
 fn pass1(args: NormalizationPass1Args) -> Result<LoudnessValues> {
     let mut ffmpeg = FFmpeg::new(args.common_args.input_file);
 
-    ffmpeg.cmd().arg("-filter").arg(format!(
+    ffmpeg.cmd().arg("-filter_complex").arg(format!(
         // "[0:0]loudnorm=i={}:lra={}:tp={}:offset={}:print_format=json",
         "loudnorm=i={}:lra={}:tp={}:offset={}:print_format=json",
         args.common_args.target_level,
@@ -160,7 +160,7 @@ fn pass2(args: NormalizationPass2Args) -> Result<()> {
 
     ffmpeg.cmd()
         // .arg("-filter_complex")
-        .arg("-filter")
+        .arg("-filter_complex")
         // .arg(filter + ":linear=true:print_format=json[norm0]")
         .arg(filter + ":linear=true:print_format=json")
         // Set metadata information of the next output file from infile.

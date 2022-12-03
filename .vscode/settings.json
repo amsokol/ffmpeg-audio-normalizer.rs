@@ -13,5 +13,11 @@
         "perchannel",
         "slhck",
         "trunc"
+    ],
+    "recommendations": [
+        "rust-lang.rust-analyzer",
+        "tamasfe.even-better-toml",
+        "serayuzgur.crates",
+        "vadimcn.vscode-lldb"
     ]
 }
