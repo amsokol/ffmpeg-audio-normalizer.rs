@@ -21,9 +21,9 @@
             },
             "args": [
                 "-i",
-                "./test/audio.ac3",
+                "./test/10_seconds.ac3",
                 "-o",
-                "./test/audio.debug.ac3",
+                "./test/10_seconds.debug.ac3",
                 "--verbose",
                 "ebu",
                 "--",
