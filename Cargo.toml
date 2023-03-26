@@ -22,10 +22,11 @@ clap = { version = "4", features = [
     "wrap_help",
 ] }
 anyhow = { version = "1" }
-props-rs = { version = "0" }
 regex = { version = "1" }
 lazy_static = { version = "1" }
 indicatif = { version = "0" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 
 [[bin]]
 name = "ffmpeg-audio-normalizer"

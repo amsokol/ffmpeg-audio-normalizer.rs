@@ -1,7 +1,9 @@
-use anyhow::{bail, Context, Result};
-use props_rs::{parse, Property};
+use anyhow::{anyhow, bail, Context, Result};
+use serde::{de::Error, Deserialize, Deserializer};
 use std::env::consts::OS;
 use std::env::current_dir;
+use std::io;
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::Duration;
@@ -9,37 +11,38 @@ use std::time::Duration;
 pub struct FFprobe {}
 
 impl FFprobe {
-    pub fn info(file: &Path) -> Result<FileInfo> {
-        /* Check input file exist or not */
-        if !Path::new(&file).exists() {
-            bail!("File not found: {}", file.display())
-        }
-
+    pub fn info(file: &Path) -> Result<AudioStream> {
         let output = Command::new(FFprobe::ffprobe_path())
             .arg("-i")
             .arg(file)
-            .arg("-v")
-            .arg("quiet")
-            .arg("-of")
-            .arg("default=noprint_wrappers=1")
+            .arg("-loglevel")
+            .arg("error")
+            .arg("-print_format")
+            .arg("json")
             .arg("-show_streams")
             .arg("-select_streams")
             .arg("a:0")
             .output()
-            .with_context(|| "Failed to run ffprobe")?;
+            .with_context(|| "Failed to run FFprobe")?;
 
         if !output.status.success() {
-            bail!(
-                "Failed to run ffprobe for input file, {}, error: \n{}",
-                output.status,
-                String::from_utf8_lossy(&output.stderr)
-            )
+            let stderr = io::stderr();
+            let mut lock = stderr.lock();
+            let _ = writeln!(lock, "{}", String::from_utf8_lossy(&output.stderr));
+
+            if let Some(code) = output.status.code() {
+                bail!("Failed to run FFprobe with exit code={}", code);
+            } else {
+                bail!("Failed to run FFprobe without exit code");
+            }
         }
 
-        return match parse(&output.stdout) {
-            Err(error) => bail!("Failed to parse ffprobe output: {error}"),
-            Ok(properties) => Ok(FileInfo { properties }),
-        };
+        let mut res = serde_json::from_slice::<FileInfo>(&output.stdout)
+            .with_context(|| "Failed to parse FFprobe output")?;
+
+        res.streams
+            .pop()
+            .ok_or_else(|| anyhow!("FFprobe does not return stream information"))
     }
 
     fn ffprobe_path() -> PathBuf {
@@ -59,32 +62,27 @@ impl FFprobe {
         path
     }
 }
-pub struct FileInfo {
-    properties: Vec<Property>,
+
+#[derive(Deserialize)]
+struct FileInfo {
+    streams: Vec<AudioStream>,
 }
 
-impl FileInfo {
-    fn property(&self, name: &str) -> Option<&str> {
-        self.properties
-            .iter()
-            .find(|p| name == p.key)
-            .map(|p| p.value.as_str())
-    }
+#[derive(Deserialize)]
+pub struct AudioStream {
+    pub codec_name: String,
+    #[serde(default, deserialize_with = "from_duration")]
+    pub duration: Option<Duration>,
+    #[serde(default)]
+    pub bit_rate: Option<String>,
+}
 
-    pub fn codec_name(&self) -> Option<&str> {
-        self.property("codec_name")
-    }
-
-    pub fn duration(&self) -> Option<Duration> {
-        self.property("duration").and_then(|d| {
-            d.parse::<f64>()
-                .map(|d| Duration::from_millis((d * 1000.0).trunc() as u64))
-                .ok()
-        })
-    }
-
-    pub fn bit_rate(&self) -> Option<i64> {
-        self.property("bit_rate")
-            .and_then(|b| b.parse::<i64>().ok())
-    }
+fn from_duration<'a, D>(deserializer: D) -> Result<Option<Duration>, D::Error>
+where
+    D: Deserializer<'a>,
+{
+    let s: &str = Deserialize::deserialize(deserializer)?;
+    s.parse::<f64>()
+        .map(|d| Some(Duration::from_micros((d * 1_000_000.0).trunc() as u64)))
+        .map_err(|err| D::Error::custom(err.to_string()))
 }

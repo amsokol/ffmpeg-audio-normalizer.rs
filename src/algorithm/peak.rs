@@ -1,6 +1,6 @@
-use crate::algorithm::io::to_stdout;
+use crate::io::to_stdout;
 use crate::tool::ffmpeg::FFmpeg;
-use crate::tool::ffprobe::{FFprobe, FileInfo};
+use crate::tool::ffprobe::{AudioStream, FFprobe};
 use anyhow::{bail, Context, Result};
 use lazy_static::lazy_static;
 use regex::Regex;
@@ -26,7 +26,7 @@ pub struct NormalizationArgs<'a> {
 struct NormalizationCommonArgs<'a> {
     verbose: bool,
     input_file: &'a Path,
-    input_file_info: FileInfo,
+    input_file_info: AudioStream,
     ffmpeg_args: &'a [String],
 }
 
@@ -88,7 +88,7 @@ fn pass1(args: NormalizationPass1Args) -> Result<f64> {
         .exec(
             "[1/2] Processing audio file to measure loudness values:",
             args.common_args.verbose,
-            args.common_args.input_file_info.duration(),
+            args.common_args.input_file_info.duration,
         )
         .with_context(|| "Failed to processing audio file to measure loudness values")?;
 
@@ -124,7 +124,7 @@ fn pass2(args: NormalizationPass2Args) -> Result<()> {
         .exec(
             "[2/2] Peak Normalizing audio file:",
             args.common_args.verbose,
-            args.common_args.input_file_info.duration(),
+            args.common_args.input_file_info.duration,
         )
         .with_context(|| "Failed to normalizing audio file")?;
 

@@ -1,4 +1,5 @@
-use crate::tool::ffprobe::FileInfo;
+use crate::io::to_stderr;
+use crate::tool::ffprobe::AudioStream;
 use anyhow::{anyhow, bail, Context, Result};
 use indicatif::{ProgressBar, ProgressStyle};
 use lazy_static::lazy_static;
@@ -60,7 +61,7 @@ impl FFmpeg {
     }
 
     fn dump_command_args(&self) {
-        println!("Running ffmpeg with the following arguments:");
+        println!("Running FFmpeg with the following arguments:");
         print!("[ ");
         self.cmd
             .get_args()
@@ -68,16 +69,14 @@ impl FFmpeg {
         println!("]");
     }
 
-    pub fn add_common_args(&mut self, file_info: &FileInfo, ffmpeg_args: &[String]) {
+    pub fn add_common_args(&mut self, file_info: &AudioStream, ffmpeg_args: &[String]) {
         // set bit rate
-        if let Some(bitrate) = file_info.bit_rate() {
-            self.cmd.arg("-b:a").arg(format!("{}", bitrate));
+        if let Some(bitrate) = &file_info.bit_rate {
+            self.cmd.arg("-b:a").arg(bitrate);
         }
 
         // set codec name
-        if let Some(codec) = file_info.codec_name() {
-            self.cmd.arg("-c:a").arg(codec);
-        }
+        self.cmd.arg("-c:a").arg(file_info.codec_name.as_str());
 
         // custom args
         ffmpeg_args.iter().for_each(|arg| {
@@ -102,7 +101,7 @@ impl FFmpeg {
         let mut child = self
             .cmd
             .spawn()
-            .with_context(|| "Failed to run ffmpeg tool")?;
+            .with_context(|| "Failed to run FFmpeg tool")?;
 
         let bar = ProgressBar::new(
             duration
@@ -112,12 +111,13 @@ impl FFmpeg {
 
         bar.set_style(
             if duration.is_some() {
-                    ProgressStyle::default_bar().template(
-                        "[{elapsed_precise}] {bar:50.cyan/cyan} {percent}% (remaining: {eta})",
-                    )
+                ProgressStyle::default_bar().template(
+                    "[{elapsed_precise}] {bar:50.cyan/cyan} {percent}% (remaining: {eta})",
+                )
             } else {
-                    ProgressStyle::default_bar().template("[{elapsed_precise}] {spinner:.cyan}")
-            }.unwrap_or_else(|_| ProgressStyle::default_bar())
+                ProgressStyle::default_bar().template("[{elapsed_precise}] {spinner:.cyan}")
+            }
+            .unwrap_or_else(|_| ProgressStyle::default_bar()),
         );
 
         bar.set_position(0);
@@ -142,16 +142,34 @@ impl FFmpeg {
                     }
                 });
         } else {
-            bail!("Failed to open ffmpeg stdout");
+            bail!("Failed to open FFmpeg stdout");
         }
 
-        let _ = child.wait();
+        let res = child.wait();
 
-        Ok(BufReader::new(
-            child
-                .stderr
-                .take()
-                .ok_or_else(|| anyhow!("Failed to open ffmpeg stderr"))?,
-        ))
+        let stderr = child.stderr.take().map(BufReader::new);
+
+        match res {
+            Ok(status) => {
+                if !status.success() {
+                    if let Some(stderr) = stderr {
+                        to_stderr(stderr);
+                    }
+                    if let Some(code) = status.code() {
+                        bail!("Failed to run FFmpeg with exit code={}", code);
+                    } else {
+                        bail!("Failed to run FFmpeg without exit code");
+                    }
+                }
+            }
+            Err(err) => {
+                if let Some(stderr) = stderr {
+                    to_stderr(stderr);
+                }
+                return Err(err).with_context(|| "Failed to run FFmpeg tool");
+            }
+        }
+
+        stderr.ok_or_else(|| anyhow!("Failed to open FFmpeg stderr"))
     }
 }

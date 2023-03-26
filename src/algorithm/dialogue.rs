@@ -1,4 +1,4 @@
-use crate::algorithm::io::to_stdout;
+use crate::io::to_stdout;
 use crate::tool::ffmpeg::FFmpeg;
 use crate::tool::ffprobe::FFprobe;
 use anyhow::{Context, Result};
@@ -23,7 +23,7 @@ pub fn normalize(args: NormalizationArgs) -> Result<()> {
     ffmpeg
         .cmd()
         .arg("-dialnorm")
-        .arg(format!("{}", args.target_level));
+        .arg(args.target_level.to_string());
 
     ffmpeg.add_common_args(&input_file_info, args.ffmpeg_args);
 
@@ -36,7 +36,7 @@ pub fn normalize(args: NormalizationArgs) -> Result<()> {
         .exec(
             "[1/1] Dialogue Normalizing audio file:",
             args.verbose,
-            input_file_info.duration(),
+            input_file_info.duration,
         )
         .with_context(|| "Failed to normalizing audio file")?;
 
