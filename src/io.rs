@@ -1,8 +1,7 @@
-use std::io;
-use std::io::Write;
+use std::io::{stderr, stdout, BufRead, Write};
 
-pub fn to_stdout<R: io::BufRead>(reader: R) {
-    let stdout = io::stdout();
+pub fn to_stdout<R: BufRead>(reader: R) {
+    let stdout: std::io::Stdout = stdout();
     let mut lock = stdout.lock();
 
     reader
@@ -13,8 +12,8 @@ pub fn to_stdout<R: io::BufRead>(reader: R) {
         });
 }
 
-pub fn to_stderr<R: io::BufRead>(reader: R) {
-    let stderr = io::stderr();
+pub fn to_stderr<R: BufRead>(reader: R) {
+    let stderr = stderr();
     let mut lock = stderr.lock();
 
     reader
